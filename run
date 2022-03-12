@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+AWS_REGION=eu-west-2
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+STACK_NAME="API-Gateway-DynamoDB"
+S3_BUILD_BUCKET=s3-bucket-angel
+
+echo "\n\n=========== Sam validate template ==========="
+sam validate --template template.yaml
+
+echo "\n\n=========== Validate CloudFormation ==========="
+aws cloudformation validate-template \
+  --template-body file://template.yaml \
+  --region $AWS_REGION
+
+echo "\n\n=========== Sam Build ==========="
+sam build --template template.yaml
+
+echo "\n\n=========== Create S3 Bucket ==========="
+aws s3api create-bucket \
+  --bucket "${S3_BUILD_BUCKET}" \
+  --region $AWS_REGION \
+  --create-bucket-configuration LocationConstraint=$AWS_REGION
+
+echo "\n\n=========== Sam Package ==========="
+sam package \
+  --output-template-file packaged.yaml \
+  --s3-bucket "${S3_BUILD_BUCKET}" \
+  --region $AWS_REGION
+
+echo "\n\n=========== Sam Deploy ==========="
+sam deploy --template-file packaged.yaml \
+  --stack-name "${STACK_NAME}" \
+  --capabilities CAPABILITY_IAM \
+  --region $AWS_REGION \
+  --debug

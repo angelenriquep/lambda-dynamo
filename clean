@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+S3_BUILD_BUCKET=s3-bucket-angel
+AWS_REGION=eu-west-2
+STACK_NAME="API-Gateway-DynamoDB"
+
+echo "\n\n=========== Delete CloudFormation ==========="
+aws cloudformation delete-stack --stack-name $STACK_NAME
+
+echo "\n\n=========== Delete S3 Bucket ==========="
+aws s3 rb s3://$S3_BUILD_BUCKET --force  

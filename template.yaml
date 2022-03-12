@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Builds serverless API, complete with Lambda functions,
+  API Gateway and DynamoDB table.
+Globals:
+  Function:
+    Timeout: 3
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref DemoTable
+Parameters:
+  DataBucketName:
+    Type: String
+    Description: S3 bucket where CSV files are placed
+    Default: gstafford-demo-data
+Resources:
+  DemoServerlessApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+  ApiHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Receives api requests and interacts with DynamoDB table (scan)
+      CodeUri: cmd
+      Handler: app.getMessages
+      Runtime: go1.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DemoTable
+      Events:
+        GetEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId: !Ref DemoServerlessApi
+        PostEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+            RestApiId: !Ref DemoServerlessApi
+        PactchEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: PATCH
+            RestApiId: !Ref DemoServerlessApi
+        PutEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: PUT
+            RestApiId: !Ref DemoServerlessApi
+        DeleteEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: DELETE
+            RestApiId: !Ref DemoServerlessApi
+  DemoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: "email"
+          AttributeType: S
+        - AttributeName: "firstName"
+          AttributeType: S
+      KeySchema:
+        - AttributeName: "email"
+          KeyType: HASH
+        - AttributeName: "firstName"
+          KeyType: RANGE
+Outputs:
+  MyStacksRegion:
+    Description: "Region where cfn stack is located"
+    Value: !Ref AWS::Region
+  DemoTable:
+    Description: "Name of DynamoDB table"
+    Value: !Ref DemoTable
+  ApiHandlerFunction:
+    Description: "Example API Gateway endpoint: ApiHandlerFunction"
+    Value: !Sub "https://${DemoServerlessApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
